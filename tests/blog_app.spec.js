@@ -7,6 +7,12 @@ const test_user = {
   password: "test",
 };
 
+const test_blog = {
+  title: "React patterns",
+  author: "Michael Chan",
+  url: "https://reactpatterns.com/",
+};
+
 describe("Blog app", () => {
   beforeEach(async ({ page, request }) => {
     await request.post("/api/tests/reset");
@@ -46,6 +52,24 @@ describe("Blog app", () => {
       );
       await expect(page.locator(".error")).toHaveCSS("border-style", "solid");
       await expect(page.locator(".error")).toHaveCSS("color", "rgb(255, 0, 0)");
+    });
+  });
+
+  describe("When logged in", () => {
+    beforeEach(async ({ page }) => {
+      await loginWith(page, test_user.username, test_user.password);
+    });
+
+    test("a new blog can be created", async ({ page }) => {
+      await page.getByRole("button", { name: "create new" }).click();
+      await page.getByLabel("title").fill(test_blog.title);
+      await page.getByLabel("author").fill(test_blog.author);
+      await page.getByLabel("url").fill(test_blog.url);
+      await page.getByRole("button", { name: "create" }).click();
+
+      await expect(
+        page.getByText(`${test_blog.title} - ${test_blog.author}`)
+      ).toBeVisible();
     });
   });
 });
