@@ -7,6 +7,12 @@ const test_user = {
   password: "test",
 };
 
+const another_test_user = {
+  name: "Test User 2",
+  username: "testuser2",
+  password: "test2",
+};
+
 const test_blog = {
   title: "React patterns",
   author: "Michael Chan",
@@ -94,6 +100,37 @@ describe("Blog app", () => {
 
         await expect(
           page.getByText(`${test_blog.title} - ${test_blog.author}`)
+        ).not.toBeVisible();
+      });
+
+      test("only the user who created the blog can see the remove blog button", async ({
+        page,
+        request,
+      }) => {
+        await page.getByRole("button", { name: "view" }).click();
+        await expect(
+          page.getByRole("button", { name: "remove" })
+        ).toBeVisible();
+
+        await request.post("/api/users", {
+          data: another_test_user,
+        });
+        await page.getByRole("button", { name: "logout" }).click();
+        await expect(page.getByRole("button", { name: "login" })).toBeVisible();
+
+        await loginWith(
+          page,
+          another_test_user.username,
+          another_test_user.password
+        );
+
+        await expect(
+          page.getByText(`${another_test_user.name} logged in`)
+        ).toBeVisible();
+
+        await page.getByRole("button", { name: "view" }).click();
+        await expect(
+          page.getByRole("button", { name: "remove" })
         ).not.toBeVisible();
       });
     });
