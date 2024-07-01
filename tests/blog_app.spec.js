@@ -1,5 +1,5 @@
 const { test, expect, beforeEach, describe } = require("@playwright/test");
-const { loginWith, createBlog } = require("./test_helper");
+const { loginWith, createBlog, initialBlogs } = require("./test_helper");
 
 const test_user = {
   name: "Test User",
@@ -132,6 +132,37 @@ describe("Blog app", () => {
         await expect(
           page.getByRole("button", { name: "remove" })
         ).not.toBeVisible();
+      });
+    });
+
+    describe("When many blog exists", () => {
+      beforeEach(async ({ page, request }) => {
+        for (let i = 0; i < initialBlogs.length; i++) {
+          await request.post("/api/tests/create_blog", {
+            data: initialBlogs[i],
+          });
+        }
+      });
+
+      test("they are ordered by like count", async ({ page }) => {
+        await page.reload();
+        await page.getByRole("button", { name: "view" }).first().waitFor();
+        const viewButtons = await page
+          .getByRole("button", { name: "view" })
+          .all();
+
+        let likes = [];
+
+        for (let i = 0; i < viewButtons.length; i++) {
+          await viewButtons[i].click();
+          const text = await page.getByText(/likes \d+/).textContent();
+          likes = likes.concat(Number(text.split(" ")[1]));
+          await page.getByRole("button", { name: "hide" }).click();
+        }
+
+        for (let i = 0; i < likes.length - 1; i++) {
+          expect(likes[i]).toBeGreaterThanOrEqual(likes[i + 1]);
+        }
       });
     });
   });
